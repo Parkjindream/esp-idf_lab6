@@ -1,0 +1,89 @@
+menu "Lab6 LCD HD44780"
+
+    choice LAB_PINMAP
+        prompt "Pin map"
+        default LAB_PINMAP_DIAGRAM
+        help
+            DIAGRAM: LCD1 RS=16 E=17 D4-D7=23,25,26,27 (as in lcd.svg).
+            SHEET:   LCD1 RS=4  E=5  D4-D7=16,17,18,19 (lab-sheet example).
+
+        config LAB_PINMAP_DIAGRAM
+            bool "DIAGRAM (RS=16 E=17 D4-D7=23,25,26,27)"
+        config LAB_PINMAP_SHEET
+            bool "SHEET (RS=4 E=5 D4-D7=16,17,18,19)"
+    endchoice
+
+    choice LAB_MISSION
+        prompt "Mission to build"
+        default LAB_MISSION_3
+        help
+            Select which lab mission the firmware runs.
+
+        config LAB_MISSION_1
+            bool "Mission 1: timing verification (1 LCD, 4-bit, continuous E/RS pulses)"
+        config LAB_MISSION_2
+            bool "Mission 2: dual instance (LCD1 4-bit countdown + LCD2 8-bit status)"
+        config LAB_MISSION_3
+            bool "Mission 3: analog bargraph (1 LCD, 4-bit)"
+    endchoice
+
+    choice LAB_BAR_SOURCE
+        prompt "Bargraph input source (Mission 3)"
+        default LAB_BAR_SRC_ADC
+        depends on LAB_MISSION_3
+
+        config LAB_BAR_SRC_ADC
+            bool "ADC (VOLUME potentiometer / sensor)"
+        config LAB_BAR_SRC_RAMP
+            bool "Software ramp 0..100% (no wiring needed)"
+        config LAB_BAR_SRC_SENSORS
+            bool "Ultrasonic (HC-SR04) + DHT temperature/humidity"
+    endchoice
+
+    config LAB_US_TRIG_GPIO
+        int "Ultrasonic TRIG GPIO (output)"
+        range 0 33
+        default 13
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_SENSORS
+        help
+            Must match the wire you connected from the sensor TRIG pin.
+
+    config LAB_US_ECHO_GPIO
+        int "Ultrasonic ECHO GPIO (input)"
+        range 0 39
+        default 14
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_SENSORS
+        help
+            Must match the wire you connected from the sensor ECHO pin.
+            WARNING: HC-SR04 ECHO is 5 V; ESP32 inputs are 3.3 V only.
+
+    config LAB_DHT_GPIO
+        int "DHT DATA GPIO"
+        range 0 33
+        default 21
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_SENSORS
+
+    choice LAB_DHT_TYPE
+        prompt "DHT sensor type"
+        default LAB_DHT_TYPE_DHT11
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_SENSORS
+
+        config LAB_DHT_TYPE_DHT11
+            bool "DHT11 (blue case)"
+        config LAB_DHT_TYPE_DHT22
+            bool "DHT22 / AM2302 (white case)"
+    endchoice
+
+    config LAB_US_MAX_CM
+        int "Distance shown as 100% on the bargraph (cm)"
+        range 10 400
+        default 100
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_SENSORS
+
+    config LAB_ADC_GPIO
+        int "ADC GPIO (ADC1 only: 32..39)"
+        range 32 39
+        default 34
+        depends on LAB_MISSION_3 && LAB_BAR_SRC_ADC
+
+endmenu
